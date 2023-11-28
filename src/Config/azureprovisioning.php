@@ -79,6 +79,7 @@ return [
      * Group Resource Type settings
      */
     'Groups' => [
+        'nameField' => 'name',
         'singular' => 'Group',
         'description' => 'User Groups',
         'schema' => [SCIMConstantsV2::SCHEMA_GROUP],
