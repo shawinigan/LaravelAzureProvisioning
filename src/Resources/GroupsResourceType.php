@@ -1,10 +1,10 @@
 <?php
 
-namespace RobTrehy\LaravelAzureProvisioning\Resources;
+namespace Shawinigan\Sso\LaravelAzureProvisioning\Resources;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use RobTrehy\LaravelAzureProvisioning\Exceptions\AzureProvisioningException;
+use Shawinigan\Sso\LaravelAzureProvisioning\Exceptions\AzureProvisioningException;
 
 class GroupsResourceType extends ResourceType
 {
@@ -18,14 +18,12 @@ class GroupsResourceType extends ResourceType
         $name = ($validatedData['displayname']) ?: null;
 
         if ($name === null) {
-            // TODO: Make this the correct exception message and code
             throw (new AzureProvisioningException("name not provided"));
         }
 
         try {
             $model::findOrCreate($name);
         } catch (QueryException $exception) {
-            // TODO: Handle this better
             throw $exception;
         }
 
@@ -45,13 +43,14 @@ class GroupsResourceType extends ResourceType
 
     public function replaceFromSCIM(array $validatedData, Model $group)
     {
+        $nameField = config('azureprovisioning.Groups.nameField');
         $groupModel = $this->getModel();
 
         // Remove all members
-        $this->removeMembers($group->users, $group->name);
+        $this->removeMembers($group->users, $group->$nameField);
 
         if (isset($validatedData['members'])) {
-            $this->addMembers($validatedData['members'], $group->name);
+            $this->addMembers($validatedData['members'], $group->$nameField);
             unset($validatedData['members']);
         }
 
@@ -78,15 +77,16 @@ class GroupsResourceType extends ResourceType
 
         $group->save();
 
-        return $groupModel::findByName($group->name);
+        return $groupModel::findByName($group->$nameField);
     }
 
     public function patch(array $operation, Model $object)
     {
+        $nameField = config('azureprovisioning.Groups.nameField');
         switch (strtolower($operation['op'])) {
             case "add":
                 if ($operation['path'] === "members" && is_array($operation['value'])) {
-                    $this->addMembers($operation['value'], $object->name);
+                    $this->addMembers($operation['value'], $object->$nameField);
                 } else {
                     // This passes MS tests but is very incorrect. An exception should not return a 2xx status code
                     throw (new AzureProvisioningException("Operations value is incorrectly formatted"))->setCode(204);
@@ -96,9 +96,9 @@ class GroupsResourceType extends ResourceType
                 if (isset($operation['path'])) {
                     if ($operation['path'] === "members") {
                         if (isset($operation['value'])) {
-                            $this->removeMembers($operation['value'], $object->name);
+                            $this->removeMembers($operation['value'], $object->$nameField);
                         } else {
-                            $this->removeMembers($object->users, $object->name);
+                            $this->removeMembers($object->users, $object->$nameField);
                         }
                     }
                 } else {
@@ -122,7 +122,7 @@ class GroupsResourceType extends ResourceType
 
         $object->save();
 
-        return $this->getModel()::findByName($object->name);
+        return $this->getModel()::findByName($object->$nameField);
     }
 
     public function getMemberMappingMethod()
