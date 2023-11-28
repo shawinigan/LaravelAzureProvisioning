@@ -1,6 +1,6 @@
 <?php
 
-namespace Shawinigan\Sso\LaravelAzureProvisioning\Resources;
+namespace RobTrehy\LaravelAzureProvisioning\Resources;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
